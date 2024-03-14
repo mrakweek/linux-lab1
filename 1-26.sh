@@ -2,9 +2,8 @@
 
 # Функция для вывода инструкции
 usage() {
-    echo "Please enter integers one by one, pressing Enter after each. To end input, press Enter on an empty line."
+    echo "Please enter numbers one by one, pressing Enter after each. To end input, press Enter on an empty line."
 }
-
 
 # Проверка, что скрипт не запущен с аргументами
 if [[ $# -gt 0 ]]; then
@@ -14,18 +13,21 @@ fi
 
 # Считывание чисел в массив
 nums=()
-while IFS= read -r line; do
+while true; do
+    read -p "Enter a number (leave empty to finish input): " input
+
     # Проверяем пустую строку - признак окончания ввода
-    if [[ -z "$line" ]]; then
+    if [[ -z "$input" ]]; then
         break
     fi
-    
-    # Проверяем, что введено целое число
-    if ! [[ "$line" =~ ^-?[0-9]+$ ]]; then
-        echo "Error: Input must be an integer."
+
+    # Проверяем, что введено число (целое или с плавающей точкой)
+    if [[ ! "$input" =~ ^-?[0-9]+(\.[0-9]+)?$ ]]; then
+        echo "Error: Input must be a number."
         exit 1
     fi
-    nums+=("$line")
+
+    nums+=("$input")
 done
 
 # Проверяем, что чисел достаточно для расчета усеченного среднего
@@ -38,17 +40,16 @@ fi
 sorted_numbers=($(printf '%s\n' "${nums[@]}" | sort -n))
 
 len=${#nums[@]}
-  
+
 # Вычисление среднего арифметического оставшихся элементов
 truncated_sum=0
 for ((i=1; i<len - 1; i++)); do
-	truncated_sum=$((truncated_sum+${sorted_numbers[i]}))
+    truncated_sum=$(echo "$truncated_sum+${sorted_numbers[i]}" | bc)
 done
 
 ((len=len-2))
-let "truncated_average=$truncated_sum/$len"
+truncated_average=$(echo "scale=2; $truncated_sum / $len" | bc)
 
 # Вывод усеченного среднего
 echo "Truncated Average: $truncated_average"
 exit 0
-
