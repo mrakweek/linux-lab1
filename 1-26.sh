@@ -1,40 +1,54 @@
 #!/bin/bash
 
-# Функция для удаления промежуточных файлов
-cleanup() {
-  rm -f sorted_numbers.txt truncated_average.txt
+# Функция для вывода инструкции
+usage() {
+    echo "Please enter integers one by one, pressing Enter after each. To end input, press Enter on an empty line."
 }
 
-# Проверка наличия необходимого количества аргументов
-if [ "$#" -lt 5 ]; then
-  echo "Error: At least 5 numbers are required."
-  exit 1
+
+# Проверка, что скрипт не запущен с аргументами
+if [[ $# -gt 0 ]]; then
+    usage
+    exit 1
 fi
 
-# Чтение чисел со стандартного ввода
-numbers=()
-for ((i=1; i<=$#; i++)); do
-  numbers+=(${!i})
+# Считывание чисел в массив
+nums=()
+while IFS= read -r line; do
+    # Проверяем пустую строку - признак окончания ввода
+    if [[ -z "$line" ]]; then
+        break
+    fi
+    
+    # Проверяем, что введено целое число
+    if ! [[ "$line" =~ ^-?[0-9]+$ ]]; then
+        echo "Error: Input must be an integer."
+        exit 1
+    fi
+    nums+=("$line")
 done
 
-# Сортировка чисел по возрастанию
-sorted_numbers=($(printf '%s\n' "${numbers[@]}" | sort -n))
+# Проверяем, что чисел достаточно для расчета усеченного среднего
+if [[ ${#nums[@]} -lt 5 ]]; then
+    echo "Error: At least 5 numbers are required."
+    exit 1
+fi
 
-# Удаление первого и последнего числа
-unset 'sorted_numbers[0]'
-unset 'sorted_numbers[${#sorted_numbers[@]}-1]'
+# Сортировка чисел по возрастанию
+sorted_numbers=($(printf '%s\n' "${nums[@]}" | sort -n))
+
+len=${#nums[@]}
   
 # Вычисление среднего арифметического оставшихся элементов
 truncated_sum=0
-for n in "${sorted_numbers[@]}"; do
-  truncated_sum=$((truncated_sum+n))
+for ((i=1; i<len - 1; i++)); do
+	truncated_sum=$((truncated_sum+${sorted_numbers[i]}))
 done
-truncated_average=$((truncated_sum/${#sorted_numbers[@]}))
+
+((len=len-2))
+let "truncated_average=$truncated_sum/$len"
 
 # Вывод усеченного среднего
 echo "Truncated Average: $truncated_average"
-
-# Удаление промежуточных файлов
-cleanup
-
 exit 0
+
